@@ -6,6 +6,10 @@ import Login from './pages/Login';
 import Signup from './pages/Signup';
 import CreatorDashboard from './pages/CreatorDashboard';
 import CreatorOnboarding from './pages/CreatorOnboarding';
+import BrandDashboard from './pages/BrandDashboard';
+import BrandHome from './pages/BrandHome';
+import BrandOnboarding from './pages/BrandOnboarding';
+import BrandSettings from './pages/BrandSettings';
 import VerifyEmail from './pages/VerifyEmail';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
@@ -154,72 +158,69 @@ const App = () => {
               }
             />
             <Route
-              path="/campaigns/:id"
+              path="/brand/onboarding"
               element={
                 user && user.role === 'brand' ?
-                  <Navigate to="/brand/campaigns" /> :
+                  <BrandOnboarding user={user} onComplete={handleBrandOnboardingComplete} /> :
                   <Navigate to="/" />
               }
             />
             <Route
-              path="/new-campaign"
+              path="/brand"
+              element={
+                user && user.role === 'brand' ?
+                  (brandProfileCompleted === false ?
+                    <Navigate to="/brand/onboarding" /> :
+                    <SettingsProvider>
+                      <BrandHome user={user} onLogout={handleLogout} />
+                      <GlobalSettingsModal user={user} onUserUpdate={updateUser} />
+                    </SettingsProvider>
+                  ) :
+                  <Navigate to="/" />
+              }
+            />
+            <Route
+              path="/brand/campaigns"
               element={
                 user && user.role === 'brand' ?
                   <SettingsProvider>
-                    <NewCampaign user={user} onLogout={handleLogout} />
+                    <BrandDashboard user={user} onLogout={handleLogout} initialTab="campaigns" />
                     <GlobalSettingsModal user={user} onUserUpdate={updateUser} />
                   </SettingsProvider> :
                   <Navigate to="/" />
               }
             />
             <Route
-              path="/campaign/:campaignId/collaboration"
+              path="/brand/reports"
               element={
                 user && user.role === 'brand' ?
                   <SettingsProvider>
-                    <CampaignCollaboration user={user} onLogout={handleLogout} />
+                    <Reports user={user} onLogout={handleLogout} />
                     <GlobalSettingsModal user={user} onUserUpdate={updateUser} />
                   </SettingsProvider> :
                   <Navigate to="/" />
               }
             />
             <Route
-              path="/campaign/:campaignId/creator/:applicationId"
+              path="/brand/wallet"
               element={
                 user && user.role === 'brand' ?
                   <SettingsProvider>
-                    <CreatorProfileView user={user} onLogout={handleLogout} />
+                    <Wallet user={user} onLogout={handleLogout} />
                     <GlobalSettingsModal user={user} onUserUpdate={updateUser} />
                   </SettingsProvider> :
                   <Navigate to="/" />
               }
             />
             <Route
-              path="/campaign/:campaignId/budget"
+              path="/brand/settings"
               element={
                 user && user.role === 'brand' ?
-                  <SettingsProvider>
-                    <CampaignBudget user={user} onLogout={handleLogout} />
-                    <GlobalSettingsModal user={user} onUserUpdate={updateUser} />
-                  </SettingsProvider> :
+                  <BrandSettings user={user} onLogout={handleLogout} /> :
                   <Navigate to="/" />
               }
             />
-            <Route
-              path="/campaign/:campaignId/report"
-              element={
-                user && user.role === 'brand' ?
-                  <SettingsProvider>
-                    <BrandReport user={user} onLogout={handleLogout} />
-                    <GlobalSettingsModal user={user} onUserUpdate={updateUser} />
-                  </SettingsProvider> :
-                  <Navigate to="/" />
-              }
-            />
-            <Route
-              path="/campaign-demo"
-              element={<CampaignFlowDemo />}
-            />
+
           </Routes>
         </BrowserRouter>
         <Toaster position="top-right" />
