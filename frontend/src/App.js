@@ -10,10 +10,17 @@ import BrandDashboard from './pages/BrandDashboard';
 import BrandHome from './pages/BrandHome';
 import BrandOnboarding from './pages/BrandOnboarding';
 import BrandSettings from './pages/BrandSettings';
+import NewCampaign from './pages/NewCampaign';
+import Reports from './pages/Reports';
+import Wallet from './pages/Wallet';
 import VerifyEmail from './pages/VerifyEmail';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import CampaignCollaboration from './pages/CampaignCollaboration';
 import CreatorProfileView from './pages/CreatorProfileView';
+import CampaignBudget from './pages/CampaignBudget';
+import BrandReport from './pages/BrandReport';
+import CampaignFlowDemo from './components/CampaignFlowDemo';
 import { Toaster } from './components/ui/sonner';
 import { SettingsProvider } from './contexts/SettingsContext';
 import GlobalSettingsModal from './components/GlobalSettingsModal';
@@ -221,6 +228,73 @@ const App = () => {
               }
             />
 
+            <Route
+              path="/campaigns/:id"
+              element={
+                user && user.role === 'brand' ?
+                  <Navigate to="/brand/campaigns" /> :
+                  <Navigate to="/" />
+              }
+            />
+            <Route
+              path="/new-campaign"
+              element={
+                user && user.role === 'brand' ?
+                  <SettingsProvider>
+                    <NewCampaign user={user} onLogout={handleLogout} />
+                    <GlobalSettingsModal user={user} onUserUpdate={updateUser} />
+                  </SettingsProvider> :
+                  <Navigate to="/" />
+              }
+            />
+            <Route
+              path="/campaign/:campaignId/collaboration"
+              element={
+                user && user.role === 'brand' ?
+                  <SettingsProvider>
+                    <CampaignCollaboration user={user} onLogout={handleLogout} />
+                    <GlobalSettingsModal user={user} onUserUpdate={updateUser} />
+                  </SettingsProvider> :
+                  <Navigate to="/" />
+              }
+            />
+            <Route
+              path="/campaign/:campaignId/creator/:applicationId"
+              element={
+                user && user.role === 'brand' ?
+                  <SettingsProvider>
+                    <CreatorProfileView user={user} onLogout={handleLogout} />
+                    <GlobalSettingsModal user={user} onUserUpdate={updateUser} />
+                  </SettingsProvider> :
+                  <Navigate to="/" />
+              }
+            />
+            <Route
+              path="/campaign/:campaignId/budget"
+              element={
+                user && user.role === 'brand' ?
+                  <SettingsProvider>
+                    <CampaignBudget user={user} onLogout={handleLogout} />
+                    <GlobalSettingsModal user={user} onUserUpdate={updateUser} />
+                  </SettingsProvider> :
+                  <Navigate to="/" />
+              }
+            />
+            <Route
+              path="/campaign/:campaignId/report"
+              element={
+                user && user.role === 'brand' ?
+                  <SettingsProvider>
+                    <BrandReport user={user} onLogout={handleLogout} />
+                    <GlobalSettingsModal user={user} onUserUpdate={updateUser} />
+                  </SettingsProvider> :
+                  <Navigate to="/" />
+              }
+            />
+            <Route
+              path="/campaign-demo"
+              element={<CampaignFlowDemo />}
+            />
           </Routes>
         </BrowserRouter>
         <Toaster position="top-right" />
