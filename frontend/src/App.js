@@ -4,20 +4,30 @@ import axios from 'axios';
 import Landing from './pages/Landing';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import CreatorDashboard from './pages/CreatorDashboard';
+import CreatorOnboarding from './pages/CreatorOnboarding';
 import VerifyEmail from './pages/VerifyEmail';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import CreatorProfileView from './pages/CreatorProfileView';
 import { Toaster } from './components/ui/sonner';
+import { SettingsProvider } from './contexts/SettingsContext';
+import GlobalSettingsModal from './components/GlobalSettingsModal';
 import './App.css';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
+// Set up axios defaults
 axios.defaults.baseURL = BACKEND_URL;
-axios.defaults.withCredentials = true;
+axios.defaults.withCredentials = true; // Important: Send cookies with requests
+
+// Set up axios defaults
 
 const App = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [brandProfileCompleted, setBrandProfileCompleted] = useState(null);
+  const [creatorOnboardingCompleted, setCreatorOnboardingCompleted] = useState(null);
 
   const handleLogout = async () => {
     try {
@@ -26,26 +36,84 @@ const App = () => {
       console.error('Logout error:', error);
     }
     setUser(null);
+    setBrandProfileCompleted(null);
+    setCreatorOnboardingCompleted(null);
   };
 
   useEffect(() => {
+    // Check if user is logged in by verifying session
     const checkAuth = async () => {
       try {
+        // Try to get current user (this will use the cookie automatically)
         const userResponse = await axios.get('/api/auth/me');
         if (userResponse.data.success) {
           setUser(userResponse.data.user);
+
+          // If user is a brand, check if profile is completed
+          if (userResponse.data.user.role === 'brand') {
+            try {
+              const profileResponse = await axios.get('/api/brand/profile-status');
+              setBrandProfileCompleted(profileResponse.data.profileCompleted);
+            } catch (err) {
+              console.log('Could not check brand profile status:', err);
+              setBrandProfileCompleted(false);
+            }
+          }
+
+          // If user is a creator, check if onboarding is completed
+          if (userResponse.data.user.role === 'creator') {
+            try {
+              const onboardingResponse = await axios.get('/api/creator/onboarding-status');
+              setCreatorOnboardingCompleted(onboardingResponse.data.onboardingCompleted);
+            } catch (err) {
+              console.log('Could not check creator onboarding status:', err);
+              setCreatorOnboardingCompleted(false);
+            }
+          }
         }
       } catch (error) {
+        // Not logged in or session expired
         console.log('No active session:', error.response?.status);
       } finally {
         setLoading(false);
       }
     };
+
     checkAuth();
   }, []);
 
+  const updateUser = async () => {
+    try {
+      const userResponse = await axios.get('/api/auth/me');
+      if (userResponse.data.success) {
+        setUser(userResponse.data.user);
+        return userResponse.data.user;
+      }
+    } catch (error) {
+      console.error('Failed to update user data:', error);
+    }
+  };
+
   const handleLogin = (userData) => {
     setUser(userData);
+    // For brand users, we need to check profile status
+    if (userData.role === 'brand') {
+      setBrandProfileCompleted(null); // Will be checked on next render
+    }
+    // For creator users, we need to check onboarding status
+    if (userData.role === 'creator') {
+      setCreatorOnboardingCompleted(null); // Will be checked on next render
+    }
+  };
+
+  const handleBrandOnboardingComplete = async () => {
+    setBrandProfileCompleted(true);
+    // Refresh user data to get the updated name
+    await updateUser();
+  };
+
+  const handleCreatorOnboardingComplete = () => {
+    setCreatorOnboardingCompleted(true);
   };
 
   if (loading) {
@@ -58,26 +126,104 @@ const App = () => {
 
   return (
     <div className="App">
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Landing onLogin={handleLogin} user={user} />} />
-          <Route path="/login" element={<Login onLogin={handleLogin} />} />
-          <Route path="/signup" element={<Signup onLogin={handleLogin} />} />
-          <Route path="/verify-email" element={<VerifyEmail />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          <Route
-            path="/creator/*"
-            element={user?.role === 'creator' ? <Navigate to="/creator" /> : <Navigate to="/" />}
-          />
-          <Route
-            path="/brand/*"
-            element={user?.role === 'brand' ? <Navigate to="/brand" /> : <Navigate to="/" />}
-          />
-        </Routes>
-      </BrowserRouter>
-      <Toaster position="top-right" />
-    </div>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Landing onLogin={handleLogin} user={user} />} />
+            <Route path="/login" element={<Login onLogin={handleLogin} />} />
+            <Route path="/signup" element={<Signup onLogin={handleLogin} />} />
+            <Route path="/verify-email" element={<VerifyEmail />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route
+              path="/creator/onboarding"
+              element={
+                user && user.role === 'creator' ?
+                  <CreatorOnboarding user={user} onComplete={handleCreatorOnboardingComplete} /> :
+                  <Navigate to="/" />
+              }
+            />
+            <Route
+              path="/creator"
+              element={
+                user && user.role === 'creator' ?
+                  (creatorOnboardingCompleted === false ?
+                    <Navigate to="/creator/onboarding" /> :
+                    <CreatorDashboard user={user} onLogout={handleLogout} />
+                  ) :
+                  <Navigate to="/" />
+              }
+            />
+            <Route
+              path="/campaigns/:id"
+              element={
+                user && user.role === 'brand' ?
+                  <Navigate to="/brand/campaigns" /> :
+                  <Navigate to="/" />
+              }
+            />
+            <Route
+              path="/new-campaign"
+              element={
+                user && user.role === 'brand' ?
+                  <SettingsProvider>
+                    <NewCampaign user={user} onLogout={handleLogout} />
+                    <GlobalSettingsModal user={user} onUserUpdate={updateUser} />
+                  </SettingsProvider> :
+                  <Navigate to="/" />
+              }
+            />
+            <Route
+              path="/campaign/:campaignId/collaboration"
+              element={
+                user && user.role === 'brand' ?
+                  <SettingsProvider>
+                    <CampaignCollaboration user={user} onLogout={handleLogout} />
+                    <GlobalSettingsModal user={user} onUserUpdate={updateUser} />
+                  </SettingsProvider> :
+                  <Navigate to="/" />
+              }
+            />
+            <Route
+              path="/campaign/:campaignId/creator/:applicationId"
+              element={
+                user && user.role === 'brand' ?
+                  <SettingsProvider>
+                    <CreatorProfileView user={user} onLogout={handleLogout} />
+                    <GlobalSettingsModal user={user} onUserUpdate={updateUser} />
+                  </SettingsProvider> :
+                  <Navigate to="/" />
+              }
+            />
+            <Route
+              path="/campaign/:campaignId/budget"
+              element={
+                user && user.role === 'brand' ?
+                  <SettingsProvider>
+                    <CampaignBudget user={user} onLogout={handleLogout} />
+                    <GlobalSettingsModal user={user} onUserUpdate={updateUser} />
+                  </SettingsProvider> :
+                  <Navigate to="/" />
+              }
+            />
+            <Route
+              path="/campaign/:campaignId/report"
+              element={
+                user && user.role === 'brand' ?
+                  <SettingsProvider>
+                    <BrandReport user={user} onLogout={handleLogout} />
+                    <GlobalSettingsModal user={user} onUserUpdate={updateUser} />
+                  </SettingsProvider> :
+                  <Navigate to="/" />
+              }
+            />
+            <Route
+              path="/campaign-demo"
+              element={<CampaignFlowDemo />}
+            />
+          </Routes>
+        </BrowserRouter>
+        <Toaster position="top-right" />
+      </div>
   );
 };
 
