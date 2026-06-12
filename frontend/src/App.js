@@ -21,9 +21,12 @@ import CreatorProfileView from './pages/CreatorProfileView';
 import CampaignBudget from './pages/CampaignBudget';
 import BrandReport from './pages/BrandReport';
 import CampaignFlowDemo from './components/CampaignFlowDemo';
+import ErrorBoundary from './components/ErrorBoundary';
 import { Toaster } from './components/ui/sonner';
 import { SettingsProvider } from './contexts/SettingsContext';
 import GlobalSettingsModal from './components/GlobalSettingsModal';
+import './utils/errorHandling'; // Initialize global error handling
+import './styles/resizeObserverFix.css'; // Fix ResizeObserver issues
 import './App.css';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -136,7 +139,8 @@ const App = () => {
   }
 
   return (
-    <div className="App">
+    <ErrorBoundary>
+      <div className="App">
         <BrowserRouter>
           <Routes>
             <Route path="/" element={<Landing onLogin={handleLogin} user={user} />} />
@@ -299,6 +303,7 @@ const App = () => {
         </BrowserRouter>
         <Toaster position="top-right" />
       </div>
+    </ErrorBoundary>
   );
 };
 
